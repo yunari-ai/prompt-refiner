@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Prompt Refiner - Midjourney & DALL-E</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #8b5cf6;
+            --primary-light: #a78bfa;
+            --secondary: #3b82f6;
+            --bg-dark: #0f1117;
+            --bg-surface: #1a1f2e;
+            --bg-card: #2d3748;
+            --text-primary: #f8f9fa;
+            --text-secondary: #cbd5e1;
+            --text-muted: #64748b;
+            --border: #334155;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f2e 50%, var(--bg-dark) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        header {
+            border-bottom: 1px solid var(--border);
+            background: rgba(15, 17, 23, 0.8);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 1rem 0;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+        }
+
+        .title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            display: none;
+        }
+
+        @media (min-width: 768px) {
+            .tagline {
+                display: block;
+            }
+        }
+
+        .language-selector {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .lang-btn {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .lang-btn:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .lang-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        /* Main Container */
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Two Column Layout */
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Input Section */
+        .input-area {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        textarea {
+            flex: 1;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 1rem;
+            resize: none;
+            transition: all 0.2s;
+            min-height: 250px;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .char-count {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        /* Output Section */
+        .output-area {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .output-box {
+            flex: 1;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-y: auto;
+            min-height: 250px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .output-box.empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .spinner {
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .output-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.625rem 1rem;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .btn:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border-color: var(--primary);
+        }
+
+        .btn.primary {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .btn.primary:hover {
+            background: var(--primary-light);
+            border-color: var(--primary-light);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Disclaimer Section */
+        .disclaimer {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--error);
+        }
+
+        .disclaimer-title {
+            font-weight: 700;
+            color: var(--error);
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .disclaimer-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Features Section */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-desc {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        /* Ad Banner Placeholder */
+        .ad-banner {
+            background: var(--bg-card);
+            border: 2px dashed var(--border);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .ad-placeholder {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Monetization Section */
+        .monetization {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .coffee-btn {
+            padding: 0.875rem 1.5rem;
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+            border: none;
+            border-radius: 0.5rem;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .coffee-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(245, 158, 11, 0.3);
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            background: rgba(15, 17, 23, 0.5);
+            padding: 2rem 1.5rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--success);
+            border-radius: 0.5rem;
+            padding: 1rem 1.5rem;
+            animation: slideIn 0.3s ease-out;
+            z-index: 1000;
+        }
+
+        .toast.error {
+            border-left-color: var(--error);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .hero h1 {
+                font-size: 1.875rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            main {
+                padding: 1rem;
+            }
+
+            .container {
+                gap: 1.5rem;
+            }
+
+            textarea {
+                min-height: 200px;
+            }
+
+            .output-box {
+                min-height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <div class="header-left">
+                <span class="logo">✨</span>
+                <div>
+                    <div class="title" id="headerTitle">AI Prompt Refiner</div>
+                    <div class="tagline" id="headerTagline">Transform ideas into powerful prompts</div>
+                </div>
+            </div>
+            <div class="language-selector">
+                <button class="lang-btn active" data-lang="en">EN</button>
+                <button class="lang-btn" data-lang="ja">日本語</button>
+                <button class="lang-btn" data-lang="es">ES</button>
+                <button class="lang-btn" data-lang="zh">中文</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Hero Section -->
+        <div class="hero">
+            <h1 id="heroTitle">Refine Your Prompts Instantly</h1>
+            <p id="heroDesc">Write a simple description, and watch it transform into detailed, optimized prompts for Midjourney and DALL-E 3.</p>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer">
+            <div class="disclaimer-title" id="disclaimerTitle">⚠️ Important Disclaimer</div>
+            <div class="disclaimer-text" id="disclaimerText">
+                Users assume all responsibility for generated outputs. This tool provides suggestions only. No data is stored or transmitted to external servers. Generated prompts are provided "as-is" without warranty.
+            </div>
+        </div>
+
+        <!-- Ad Banner Placeholder -->
+        <div class="ad-banner">
+            <div class="ad-placeholder" id="adPlaceholder">[Advertisement Space]</div>
+        </div>
+
+        <!-- Main Container -->
+        <div class="container">
+            <!-- Input Section -->
+            <div class="card">
+                <label class="card-label" id="inputLabel">Your Description</label>
+                <div class="input-area">
+                    <textarea id="inputPrompt" placeholder="e.g., 'A futuristic city at sunset with flying cars'..."></textarea>
+                    <div class="char-count"><span id="charCount">0</span> / 500 characters</div>
+                </div>
+            </div>
+
+            <!-- Output Section -->
+            <div class="card">
+                <label class="card-label" id="outputLabel">Refined Prompt</label>
+                <div class="output-area">
+                    <div class="output-box empty" id="outputBox">
+                        <span id="outputPlaceholder">Your refined prompt will appear here...</span>
+                    </div>
+                    <div class="output-buttons" id="outputButtons" style="display: none;">
+                        <button class="btn" id="copyBtn" onclick="copyToClipboard()">
+                            <span>📋</span>
+                            <span id="copyBtnText">Copy</span>
+                        </button>
+                        <button class="btn primary" id="downloadBtn" onclick="downloadPrompt()">
+                            <span>⬇️</span>
+                            <span id="downloadBtnText">Download</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <div class="feature-title" id="feature1Title">AI-Powered</div>
+                <div class="feature-desc" id="feature1Desc">Intelligent enhancement for all AI tools</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <div class="feature-title" id="feature2Title">Instant Results</div>
+                <div class="feature-desc" id="feature2Desc">Real-time refinement as you type</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <div class="feature-title" id="feature3Title">Privacy First</div>
+                <div class="feature-desc" id="feature3Desc">No data stored or transmitted</div>
+            </div>
+        </div>
+
+        <!-- Monetization Section -->
+        <div class="monetization">
+            <button class="coffee-btn" onclick="openCoffeeLink()">☕ Buy Me a Coffee</button>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <p id="footerText">Built with ❤️ for creative minds. No login required. All processing happens in your browser.</p>
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <script>
+        // Translations
+        const translations = {
+            en: {
+                headerTitle: 'AI Prompt Refiner',
+                headerTagline: 'Transform ideas into powerful prompts',
+                heroTitle: 'Refine Your Prompts Instantly',
+                heroDesc: 'Write a simple description, and watch it transform into detailed, optimized prompts for Midjourney and DALL-E 3.',
+                disclaimerTitle: '⚠️ Important Disclaimer',
+                disclaimerText: 'Users assume all responsibility for generated outputs. This tool provides suggestions only. No data is stored or transmitted to external servers. Generated prompts are provided "as-is" without warranty.',
+                adPlaceholder: '[Advertisement Space]',
+                inputLabel: 'Your Description',
+                outputLabel: 'Refined Prompt',
+                outputPlaceholder: 'Your refined prompt will appear here...',
+                copyBtnText: 'Copy',
+                downloadBtnText: 'Download',
+                feature1Title: 'AI-Powered',
+                feature1Desc: 'Intelligent enhancement for all AI tools',
+                feature2Title: 'Instant Results',
+                feature2Desc: 'Real-time refinement as you type',
+                feature3Title: 'Privacy First',
+                feature3Desc: 'No data stored or transmitted',
+                footerText: 'Built with ❤️ for creative minds. No login required. All processing happens in your browser.',
+                inputPlaceholder: "e.g., 'A futuristic city at sunset with flying cars'...",
+                copied: 'Copied to clipboard!',
+                downloaded: 'Downloaded!',
+                error: 'An error occurred',
+            },
+            ja: {
+                headerTitle: 'AIプロンプト最適化ツール',
+                headerTagline: 'シンプルなアイデアを強力なプロンプトに変換',
+                heroTitle: 'プロンプトを今すぐ最適化',
+                heroDesc: 'シンプルな説明を入力すると、MidjourneyとDALL-E 3向けの詳細で最適化されたプロンプトに自動変換されます。',
+                disclaimerTitle: '⚠️ 重要な免責事項',
+                disclaimerText: 'ユーザーは生成された出力に対するすべての責任を負います。このツールは提案のみを提供します。データは保存されたり、外部サーバーに送信されたりしません。生成されたプロンプトは「現状のまま」で提供され、保証はありません。',
+                adPlaceholder: '[広告スペース]',
+                inputLabel: 'あなたの説明',
+                outputLabel: '最適化されたプロンプト',
+                outputPlaceholder: 'あなたの最適化されたプロンプトがここに表示されます...',
+                copyBtnText: 'コピー',
+                downloadBtnText: 'ダウンロード',
+                feature1Title: 'AI駆動',
+                feature1Desc: 'すべてのAIツール向けのインテリジェント強化',
+                feature2Title: '即座の結果',
+                feature2Desc: '入力時にリアルタイム最適化',
+                feature3Title: 'プライバシー重視',
+                feature3Desc: 'データは保存・送信されません',
+                footerText: '❤️で作られた創造的な人々のためのツール。ログイン不要。すべての処理はブラウザで行われます。',
+                inputPlaceholder: "例：'夕焼けの中の飛行車がいる未来都市'...",
+                copied: 'クリップボードにコピーしました！',
+                downloaded: 'ダウンロードしました！',
+                error: 'エラーが発生しました',
+            },
+            es: {
+                headerTitle: 'Refinador de Prompts IA',
+                headerTagline: 'Transforma ideas en prompts poderosos',
+                heroTitle: 'Refina tus Prompts Instantáneamente',
+                heroDesc: 'Escribe una descripción simple y mírala transformarse en prompts detallados y optimizados para Midjourney y DALL-E 3.',
+                disclaimerTitle: '⚠️ Descargo de Responsabilidad Importante',
+                disclaimerText: 'Los usuarios asumen toda la responsabilidad por los resultados generados. Esta herramienta solo proporciona sugerencias. No se almacenan ni transmiten datos a servidores externos. Los prompts generados se proporcionan "tal cual" sin garantía.',
+                adPlaceholder: '[Espacio Publicitario]',
+                inputLabel: 'Tu Descripción',
+                outputLabel: 'Prompt Refinado',
+                outputPlaceholder: 'Tu prompt refinado aparecerá aquí...',
+                copyBtnText: 'Copiar',
+                downloadBtnText: 'Descargar',
+                feature1Title: 'Impulsado por IA',
+                feature1Desc: 'Mejora inteligente para todas las herramientas de IA',
+                feature2Title: 'Resultados Instantáneos',
+                feature2Desc: 'Refinamiento en tiempo real mientras escribes',
+                feature3Title: 'Privacidad Primero',
+                feature3Desc: 'Sin almacenamiento ni transmisión de datos',
+                footerText: 'Construido con ❤️ para mentes creativas. Sin inicio de sesión requerido. Todo el procesamiento ocurre en tu navegador.',
+                inputPlaceholder: "Ej: 'Una ciudad futurista al atardecer con autos voladores'...",
+                copied: '¡Copiado al portapapeles!',
+                downloaded: '¡Descargado!',
+                error: 'Ocurrió un error',
+            },
+            zh: {
+                headerTitle: 'AI提示词优化工具',
+                headerTagline: '将想法转化为强大的提示词',
+                heroTitle: '立即优化您的提示词',
+                heroDesc: '输入简单描述，观看其自动转化为Midjourney和DALL-E 3优化的详细提示词。',
+                disclaimerTitle: '⚠️ 重要免责声明',
+                disclaimerText: '用户对生成的输出承担全部责任。本工具仅提供建议。不存储或向外部服务器传输数据。生成的提示词按"原样"提供，不提供任何保证。',
+                adPlaceholder: '[广告位置]',
+                inputLabel: '您的描述',
+                outputLabel: '优化的提示词',
+                outputPlaceholder: '您的优化提示词将显示在此处...',
+                copyBtnText: '复制',
+                downloadBtnText: '下载',
+                feature1Title: 'AI驱动',
+                feature1Desc: '为所有AI工具提供智能增强',
+                feature2Title: '即时结果',
+                feature2Desc: '输入时实时优化',
+                feature3Title: '隐私优先',
+                feature3Desc: '无数据存储或传输',
+                footerText: '用❤️为创意人士打造。无需登录。所有处理都在浏览器中进行。',
+                inputPlaceholder: "例如：'夕阳下有飞行汽车的未来城市'...",
+                copied: '已复制到剪贴板！',
+                downloaded: '已下载！',
+                error: '发生错误',
+            }
+        };
+
+        let currentLanguage = 'en';
+
+        // Language Switching
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentLanguage = btn.dataset.lang;
+                updateLanguage();
+            });
+        });
+
+        function updateLanguage() {
+            const t = translations[currentLanguage];
+            document.getElementById('headerTitle').textContent = t.headerTitle;
+            document.getElementById('headerTagline').textContent = t.headerTagline;
+            document.getElementById('heroTitle').textContent = t.heroTitle;
+            document.getElementById('heroDesc').textContent = t.heroDesc;
+            document.getElementById('disclaimerTitle').textContent = t.disclaimerTitle;
+            document.getElementById('disclaimerText').textContent = t.disclaimerText;
+            document.getElementById('adPlaceholder').textContent = t.adPlaceholder;
+            document.getElementById('inputLabel').textContent = t.inputLabel;
+            document.getElementById('outputLabel').textContent = t.outputLabel;
+            document.getElementById('outputPlaceholder').textContent = t.outputPlaceholder;
+            document.getElementById('copyBtnText').textContent = t.copyBtnText;
+            document.getElementById('downloadBtnText').textContent = t.downloadBtnText;
+            document.getElementById('feature1Title').textContent = t.feature1Title;
+            document.getElementById('feature1Desc').textContent = t.feature1Desc;
+            document.getElementById('feature2Title').textContent = t.feature2Title;
+            document.getElementById('feature2Desc').textContent = t.feature2Desc;
+            document.getElementById('feature3Title').textContent = t.feature3Title;
+            document.getElementById('feature3Desc').textContent = t.feature3Desc;
+            document.getElementById('footerText').textContent = t.footerText;
+            document.getElementById('inputPrompt').placeholder = t.inputPlaceholder;
+        }
+
+        // Prompt Refinement Logic
+        const inputPrompt = document.getElementById('inputPrompt');
+        const outputBox = document.getElementById('outputBox');
+        const charCount = document.getElementById('charCount');
+        const outputButtons = document.getElementById('outputButtons');
+
+        inputPrompt.addEventListener('input', () => {
+            charCount.textContent = inputPrompt.value.length;
+            if (inputPrompt.value.trim().length > 0) {
+                refinePrompt(inputPrompt.value);
+            } else {
+                outputBox.classList.add('empty');
+                outputBox.innerHTML = `<span id="outputPlaceholder">${translations[currentLanguage].outputPlaceholder}</span>`;
+                outputButtons.style.display = 'none';
+            }
+        });
+
+        function refinePrompt(input) {
+            outputBox.classList.remove('empty');
+            outputBox.innerHTML = '<div class="loading"><div class="spinner"></div><span>Refining...</span></div>';
+
+            // Simulate processing delay
+            setTimeout(() => {
+                const refined = generateRefinedPrompt(input);
+                outputBox.innerHTML = refined;
+                outputButtons.style.display = 'flex';
+            }, 600);
+        }
+
+        function generateRefinedPrompt(input) {
+            // Enhanced prompt generation with multiple style options
+            const styles = [
+                'cinematic, professional lighting',
+                'highly detailed, 8k resolution',
+                'vibrant colors, sharp focus',
+                'intricate details, masterpiece',
+                'dramatic lighting, volumetric',
+            ];
+
+            const qualities = [
+                'trending on artstation',
+                'award-winning composition',
+                'museum quality',
+                'concept art style',
+                'digital painting',
+            ];
+
+            const techniques = [
+                'ray tracing, global illumination',
+                'subsurface scattering',
+                'depth of field',
+                'chromatic aberration',
+                'motion blur',
+            ];
+
+            let refined = input;
+
+            // Add quality descriptors
+            if (!refined.toLowerCase().includes('detailed')) {
+                refined += `, ${styles[Math.floor(Math.random() * styles.length)]}`;
+            }
+
+            // Add artistic direction
+            if (!refined.toLowerCase().includes('style')) {
+                refined += `, ${qualities[Math.floor(Math.random() * qualities.length)]}`;
+            }
+
+            // Add technical parameters
+            if (!refined.toLowerCase().includes('resolution')) {
+                refined += `, ${techniques[Math.floor(Math.random() * techniques.length)]}`;
+            }
+
+            // Add negative prompt hint for Midjourney
+            refined += '\n\n[Negative prompt: blurry, low quality, distorted]';
+
+            return refined;
+        }
+
+        function copyToClipboard() {
+            const text = outputBox.innerText.replace('[Negative prompt: blurry, low quality, distorted]', '').trim();
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(translations[currentLanguage].copied, 'success');
+            }).catch(() => {
+                showToast(translations[currentLanguage].error, 'error');
+            });
+        }
+
+        function downloadPrompt() {
+            const text = outputBox.innerText;
+            const element = document.createElement('a');
+            const file = new Blob([text], { type: 'text/plain' });
+            element.href = URL.createObjectURL(file);
+            element.download = 'prompt.txt';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+            showToast(translations[currentLanguage].downloaded, 'success');
+        }
+
+        function openCoffeeLink() {
+            window.open('https://buymeacoffee.com', '_blank');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.getElementById('toastContainer').appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Initialize
+        updateLanguage();
+    </script>
+</body>
+</html>
